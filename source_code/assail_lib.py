@@ -102,10 +102,10 @@ class player:
 
    
 
-
-class battle:
+class battle(arcade.Window):
     #class to create and run a battle map
     
+
     def __init__(self, SCREEN_WIDTH, SCREEN_HEIGHT ):
         self.SCREEN_HEIGHT = SCREEN_HEIGHT
         self.SCREEN_WIDTH = SCREEN_WIDTH
@@ -113,6 +113,7 @@ class battle:
         self.CREATURE_OFFSET = 16
         self.SCALE = 1
 
+        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 
     def generate_battle(self,oldBattleMap=[], buildNewBattleMap=True, baseTexture=0, newTexture=2, percentNewTexture=60):
@@ -173,7 +174,8 @@ class battle:
         return battleMap  
     #Returns battleMap, an mxn list of integers representing different tile textures
 
-    def draw_battle(self, battleMap, participants, overlays):
+
+    def on_draw(self, battleMap, participants, overlays):
         #Method to draw the battleMap, all participating characters, and all other overlay images
         #Arguments:
         #   battleMap: mxn list of integers representing the texture for each grid coordinate
@@ -221,7 +223,7 @@ class battle:
                 y = self.GRID_OFFSET + 48 * overlay.battleLocation[0]
                 arcade.draw_scaled_texture_rectangle(x, y, overlay.texture, self.SCALE, 0)
 
-        arcade.finish_render()
+        #arcade.finish_render()
 
     def move_player(self, character, battleMap):
         ap = character.apMax
@@ -251,7 +253,7 @@ class battle:
                     if (newLocation[0] > -1 and newLocation[1] > -1 and newLocation[0] < len(battleMap) and newLocation[1] < len(battleMap[0])):
                         character.battleMapLocation = newLocation
                         ap -= 1
-                        self.draw_battle(self, battleMap=battleMap, participants=[character], overlays=[])
+                        self.on_draw(self, battleMap=battleMap, participants=[character], overlays=[])
                         print(character.battleMapLocation)
                         print('New AP: %d' % ap)
                     else:
@@ -259,13 +261,13 @@ class battle:
                         print('move invalid')
 
     def run_battle(self, battleMap, participants):
-        arcade.open_window(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 'Battle Map')
+        #arcade.open_window(self.SCREEN_WIDTH, self.SCREEN_HEIGHT, 'Battle Map')
 
-        self.draw_battle(battleMap, participants=participants, overlays=[])
+        self.on_draw(battleMap, participants=participants, overlays=[])
+        
         arcade.run()
 
-        for participant in participants:
-            self.move_player(participant, battleMap)
+        
 
         
 
