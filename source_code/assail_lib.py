@@ -231,7 +231,7 @@ def move_creature(creature, battleMap):
 #Game Object definitions
 class creature:
     #Class representing moveable characters
-    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down'):
+    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20):
         self.name = name
         self.archetype = archetype
         self.battleMapLocation = battleMapLocation
@@ -239,6 +239,7 @@ class creature:
         self.apMax = apMax
         self.apCurrent = apMax
         self.orientation = orientation
+        self.health = health
         self.texture = None
     
     def assign_texture(self):
@@ -248,7 +249,7 @@ class creature:
     
 
 class player(creature):
-    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', teamMembers=[], money=1000 ):
+    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20, teamMembers=[], money=1000 ):
         super().__init__(self)
         self.name = name
         self.archetype = archetype
@@ -257,6 +258,7 @@ class player(creature):
         self.apMax = apMax
         self.apCurrent = apMax
         self.orientation = orientation
+        self.health = 20
         self.texture = None
         self.teamMembers = teamMembers
         self.money = money
@@ -293,7 +295,7 @@ class battle(arcade.View):
 
     def move_creature(self, creature):
         print('\n%s\'s turn to move. You have %d action points (AP). Moving costs 1 AP, attacking costs 2 AP. ' % (creature.name, creature.apCurrent))
-        print('Each move is represented by one lettter:\nl:left, r:right: u:up: d:down, a:attack, e:end turn')
+        print('Each move is represented by one lettter: l:left, r:right: u:up: d:down, a:attack, e:end turn')
         validMoves = ['l', 'r', 'u', 'd', 'a', 'e']
         move = []
 

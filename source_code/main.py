@@ -3,15 +3,13 @@ Starting Template
 
 """
 import arcade
-import AssailObjects as ao 
 
 SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 672
-WORLD_TITLE = input('Please enter the name of this world: ').strip()
+SCREEN_HEIGHT = 700
+SCREEN_TITLE = "Starting Template"
 
 
-
-class World(arcade.Window):
+class MyGame(arcade.Window):
     """
     Main application class.
 
@@ -87,7 +85,7 @@ class World(arcade.Window):
 
 def main():
     """ Main method """
-    game = World(SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_TITLE)
+    game = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
     game.setup()
     arcade.run()
 
