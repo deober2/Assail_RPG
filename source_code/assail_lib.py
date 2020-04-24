@@ -2,9 +2,11 @@
 import arcade 
 import random 
 import os
+import time
 
 #Texture IDs and paths:
 assailPath = os.getcwd()[0:-11]
+resources = assailPath + 'resources/'
 print(assailPath)
 WATER = 0
 TREE = 1
@@ -17,6 +19,14 @@ GRASS_TEXTURE = arcade.load_texture(assailPath + "resources/GrassBackground.png"
 ROCK_TEXTURE = arcade.load_texture(assailPath + "resources/RockBackground.png")
 DIRT_TEXTURE = arcade.load_texture(assailPath + "resources/DirtBackground.png")
 KNIGHT_TEXTURE_DOWN = arcade.load_texture(assailPath + "resources/knight.png")
+MAGE_TEXTURE = arcade.load_texture(resources + 'mage.png')
+FIRE = arcade.load_texture(resources + 'fire.png')
+FORWARD_SLASH = arcade.load_texture(resources + 'forward_slash.png')
+BACK_SLASH = arcade.load_texture(resources + 'back_slash.png')
+VERTICAL_SHOT = arcade.load_texture(resources + 'shot_vertical.png')
+HORIZONTAL_SHOT = arcade.load_texture(resources + 'shot_horizontal.png')
+FIRE_COLUMN_1 = arcade.load_texture(resources + 'fire_column_1.png')
+FIRE_COLUMN_2 = arcade.load_texture(resources + 'fire_column_2.png')
 
 
 #Constants
@@ -34,12 +44,45 @@ moveDict = dict(zip(userInput, moveVec))
 del userInput; del moveVec
 
 
-#Archetype attack patterns
-KNIGHT_ATTACK = [1]
+#Archetype attack patterns 
+attackNames = ['melee', 'mageBlast', 'arrow']
+patterns = [ [[1,0]],    [[3,0],[2,0],[4,0],[3,-1],[3,1]],   [[2,0],[1,0],[3,0]]   ]
+damages = [ 7, 5, 6 ]
+animationNames = ['melee', 'mageBlast', 'arrowVert', 'arrowHoriz']
+animations = [ [FORWARD_SLASH, BACK_SLASH], [FIRE_COLUMN_1, FIRE_COLUMN_2], [VERTICAL_SHOT], [HORIZONTAL_SHOT]   ]
+attackPatternDict = dict(zip(attackNames, patterns))
+attackAminationDict = dict(zip(animationNames, animations))
+attackDamageDict = dict(zip(attackNames, damages))
+del attackNames; del patterns; del animations; del animationNames; del damages
+
 
 
 
 #Game function definitions
+def mat_mult(A, direction):
+
+    if direction == 'l':
+        B = [[0,-1],[1,0]]
+    elif direction == 'r':
+        B = [[0,1],[-1,0]]
+    elif direction == 'd':
+        B = [[-1,0],[0,1]]
+    else:
+        B = [[1,0],[0,1]]
+
+    #Where row vector = [[1,2,3,4...]] and column vector = [[1], [2], [3], [4], [...]]
+    newPattern = []
+    for i in range(len(A)):
+        newPattern.append([0]*len(B[0]))
+    for i in range(len(A)):
+        for j in range(len(B[0])):
+            for k in range(len(B)):
+                newPattern[i][j] += int(A[i][k]) * int(B[k][j])
+                
+
+    return newPattern
+
+
 def drunk_walk():
     move = random.randint(-1,1)
     direction = random.randint(0,1)
@@ -231,7 +274,7 @@ def move_creature(creature, battleMap):
 #Game Object definitions
 class creature:
     #Class representing moveable characters
-    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20):
+    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20, armorClass=10, attackName='melee'):
         self.name = name
         self.archetype = archetype
         self.battleMapLocation = battleMapLocation
@@ -241,12 +284,28 @@ class creature:
         self.orientation = orientation
         self.health = health
         self.texture = None
+        self.armorClass = armorClass
+        self.attackName = attackName
+        self.living = True
     
     def assign_texture(self):
         if self.archetype == 'knight':
             if self.orientation == 'down':
                 self.texture = KNIGHT_TEXTURE_DOWN
+        elif self.archetype == 'mage':
+            self.texture = MAGE_TEXTURE
     
+    def assign_attack(self):
+        if self.archetype == 'knight':
+            self.attackName = 'melee'
+            self.attack_pattern = attackPatternDict[self.attackName]
+        elif self.archetype == 'mage':
+            self.attackName = 'mageBlast'
+            self.attack_pattern = attackPatternDict[self.attackName]
+
+
+    
+       
 
 class player(creature):
     def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20, teamMembers=[], money=1000 ):
@@ -262,6 +321,9 @@ class player(creature):
         self.texture = None
         self.teamMembers = teamMembers
         self.money = money
+        self.attackName = None
+        self.attack_pattern = None
+        self.living = True
 
 
 class overlay:
@@ -283,20 +345,20 @@ class battle(arcade.View):
         self.overlays = overlays
         self.activeIndex = activeIndex
         self.firstIter = firstIter
+        self.skipToRefresh = False
     
     def on_show(self):
         #Runs once, when the window is initialized
         arcade.set_background_color(arcade.color.WHITE)
-        print('Battle has begun\n')
-        print(self.activeIndex)
+        print('On show')
+        #print(self.activeIndex)
 
         
-        
-
     def move_creature(self, creature):
         print('\n%s\'s turn to move. You have %d action points (AP). Moving costs 1 AP, attacking costs 2 AP. ' % (creature.name, creature.apCurrent))
         print('Each move is represented by one lettter: l:left, r:right: u:up: d:down, a:attack, e:end turn')
         validMoves = ['l', 'r', 'u', 'd', 'a', 'e']
+        validAttack = ['l', 'r', 'u', 'd']
         move = []
 
         #Filter invalid moves and perform acitons
@@ -305,13 +367,17 @@ class battle(arcade.View):
             if (move == 'a' and creature.apCurrent < 2):
                 move = 'attack_not_valid'
         
-        print('Your move is '); print(move)
+        print('Your move is %s' % move)
         if (len(move) == 1 and move in validMoves and creature.apCurrent >0):
             if move == 'e':
                 creature.apCurrent = 0
             elif (move == 'a' and  creature.apCurrent >= 2):
-                print('do attack procedure: '); print(KNIGHT_ATTACK)
+                direction = []
+                while (len(direction) != 1 or direction not in validAttack):
+                    direction = input('Please enter a valid attack direction: ').strip().lower()
                 creature.apCurrent -= 2
+                self.attack_procedure( creature, direction)
+
             else:
                 moveVec = moveDict[move]
                 newLocation = elementwise_add(creature.battleMapLocation, moveVec)
@@ -327,10 +393,33 @@ class battle(arcade.View):
                     print('move invalid. Space is off-grid, occuppied or not walkable.')
             
 
+    def attack_procedure(self, creature, direction):
+        #print(attackPatternDict[creature.attackName])
+        pattern = attackPatternDict[creature.attackName]
+        pattern = mat_mult(pattern, direction)
+        for i in range(len(pattern)):
+            pattern[i] = elementwise_add(pattern[i], creature.battleMapLocation)
+        damage = attackDamageDict[creature.attackName]
+        animation = attackAminationDict[creature.attackName]
+        for i in range(len(self.participants)):
+            
+            #print(self.participants[i].battleMapLocation); 
+            #print('pattern is: '); print(pattern)
+            if self.participants[i].battleMapLocation in pattern:
+                self.participants[i].health -= damage
+                print('%s received %d damage!' % (self.participants[i].name, damage))
+                if self.participants[i].health <= 0:
+                    self.participants[i].living = False
+                    #print('%s has died.' % self.participants[i].name)
 
+        for image in animation:
+            newOverlay = overlay(texture=image, battleMapLocation=pattern[0])
+            self.overlays.append(newOverlay)
+
+                
     def on_draw(self):
         arcade.start_render()
-        
+        print('On draw')
         #Draw the battleMap tile background:
         for i in range(len(self.battleMap)):
             for j in range(len(self.battleMap[0])):
@@ -360,14 +449,18 @@ class battle(arcade.View):
 
         #Draw all overlay images
         if self.overlays:
-            for overlay in self.overlays:
-                x = 24 + 48 * overlay.battleLocation[1]
-                y = 24 + 48 * overlay.battleLocation[0]
-                arcade.draw_scaled_texture_rectangle(x, y, overlay.texture, 1, 0)
+            image = self.overlays[0]
+            x = 24 + 48 * image.battleMapLocation[1]
+            y = 24 + 48 * image.battleMapLocation[0]
+            arcade.draw_scaled_texture_rectangle(x, y, image.texture, 1, 0)
+            print('drew Overlay')
+            del self.overlays[0]
+            self.skipToRefresh = True
 
 
     def on_update(self, delta_time=0.1):
         #Main loop of the battle program. This is where all creature turns take place
+        print('on update')
         activeParticipant = self.participants[self.activeIndex]
         
         #closeWindow = input('Close Window?: ').strip().lower()
@@ -376,19 +469,24 @@ class battle(arcade.View):
 
         #if the active player is out of action points and they are the last player in the full turn,
         #Reset their current action points and go to the next player
+        print('overlays length is %d' % len(self.overlays))
         if (self.firstIter == False):
-            if activeParticipant.apCurrent <= 0:
-                    if self.activeIndex == (len(self.participants) - 1):
-                        
-                        activeParticipant.apCurrent = activeParticipant.apMax
-                        self.activeIndex = 0
-                    else:
-                        activeParticipant.apCurrent = activeParticipant.apMax
-                        self.activeIndex += 1
-            
-            elif activeParticipant.apCurrent > 0:
-                self.move_creature(activeParticipant)
-                print(self.activeIndex)
+            if (len(self.overlays) == 0 and self.skipToRefresh == False):
+                
+                if activeParticipant.apCurrent <= 0:
+                        if self.activeIndex == (len(self.participants) - 1):
+                            
+                            activeParticipant.apCurrent = activeParticipant.apMax
+                            self.activeIndex = 0
+                        else:
+                            activeParticipant.apCurrent = activeParticipant.apMax
+                            self.activeIndex += 1
+                
+                elif activeParticipant.apCurrent > 0:
+                    self.move_creature(activeParticipant)
+                    print(self.activeIndex)
+        if (self.skipToRefresh):
+            time.sleep(0.1)
         self.firstIter = False
         updatedBattle = battle(self.windowObject, self.battleMap, self.occupancy, self.participants, self.overlays, self.activeIndex, self.firstIter )
         self.window.show_view(updatedBattle)

@@ -10,9 +10,13 @@ battleMap = al.generate_battle(oldBattleMap=battleMap, buildNewBattleMap=False, 
 
 
 window = arcade.Window(1200, 672, "Battle")
-player1 = al.player(name='Essen')
-player2 = al.player(name='Caric')
+player1 = al.player(name='plyer1')
+player2 = al.player(name='player2', archetype='mage')
+
 players = [player1, player2]
+for player in players:
+    player.assign_texture()
+    player.assign_attack()
 
 occupancy = al.assign_locations(battleMap, players)
 participants = al.randomize_participants(players)
