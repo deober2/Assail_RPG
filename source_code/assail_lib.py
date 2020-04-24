@@ -232,43 +232,6 @@ def randomize_participants(players):
     return participants
 
 
-def move_creature(creature, battleMap):
-        #Function to enable player movement and actions
-        ap = creature.apMax
-        print('\n%s, it is your turn to move. You have %d action points (AP). Attacking costs 2 AP. ' % (creature.name, ap))
-        print('Each move is represented by one lettter:\nl:left, r:right: u:up: d:down, a:attack, e:end turn')
-        validMoves = ['l', 'r', 'u', 'd', 'a', 'e']
-        move = []
-
-        #filter valid moves, allow movement
-        while (len(move) != 1 or ap > 0):
-            print("Your are currently at ", end='')
-            print(creature.battleMapLocation)
-            print('with %d AP\n' % ap)
-            move = input('Please enter a single move: ').strip().lower()
-            print(move)
-            print(len(move))
-
-            if (len(move) == 1 and move in validMoves and ap >0):
-                if move == 'e':
-                    ap = 0
-                elif (move == 'a' and  ap >= 2):
-                    print('do attack procedure\n')
-                    ap -= 2
-                else:
-                    moveVec = moveDict[move]
-                    newLocation = elementwise_add(creature.battleMapLocation, moveVec)
-                    if (check_bounds(newLocation)):
-                        character.battleMapLocation = newLocation
-                        ap -= 1
-                        self.on_draw(self, battleMap=battleMap, participants=[creature], overlays=[])
-                        print(creature.battleMapLocation)
-                        print('New AP: %d' % ap)
-                    else:
-                        print(character.battleMapLocation)
-                        print('move invalid')
-
-
 
 
 #Game Object definitions
