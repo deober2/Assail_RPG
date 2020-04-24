@@ -27,7 +27,7 @@ VERTICAL_SHOT = arcade.load_texture(resources + 'shot_vertical.png')
 HORIZONTAL_SHOT = arcade.load_texture(resources + 'shot_horizontal.png')
 FIRE_COLUMN_1 = arcade.load_texture(resources + 'fire_column_1.png')
 FIRE_COLUMN_2 = arcade.load_texture(resources + 'fire_column_2.png')
-
+SELECT_BOX_WHITE = arcade.load_texture(resources + 'select_box_white.png')
 
 #Constants
 XGRID = 25
@@ -350,7 +350,7 @@ class battle(arcade.View):
     def on_show(self):
         #Runs once, when the window is initialized
         arcade.set_background_color(arcade.color.WHITE)
-        print('On show')
+        #print('On show')
         #print(self.activeIndex)
 
         
@@ -419,7 +419,7 @@ class battle(arcade.View):
                 
     def on_draw(self):
         arcade.start_render()
-        print('On draw')
+        #print('On draw')
         #Draw the battleMap tile background:
         for i in range(len(self.battleMap)):
             for j in range(len(self.battleMap[0])):
@@ -460,7 +460,7 @@ class battle(arcade.View):
 
     def on_update(self, delta_time=0.1):
         #Main loop of the battle program. This is where all creature turns take place
-        print('on update')
+        #print('on update')
         activeParticipant = self.participants[self.activeIndex]
         
         #closeWindow = input('Close Window?: ').strip().lower()
@@ -469,7 +469,7 @@ class battle(arcade.View):
 
         #if the active player is out of action points and they are the last player in the full turn,
         #Reset their current action points and go to the next player
-        print('overlays length is %d' % len(self.overlays))
+        #print('overlays length is %d' % len(self.overlays))
         if (self.firstIter == False):
             if (len(self.overlays) == 0 and self.skipToRefresh == False):
                 
@@ -481,10 +481,11 @@ class battle(arcade.View):
                         else:
                             activeParticipant.apCurrent = activeParticipant.apMax
                             self.activeIndex += 1
+                            self.overlays.append(overlay(texture=SELECT_BOX_WHITE, battleMapLocation=self.participants[self.activeIndex].battleMapLocation))
                 
                 elif activeParticipant.apCurrent > 0:
                     self.move_creature(activeParticipant)
-                    print(self.activeIndex)
+                    #print(self.activeIndex)
         if (self.skipToRefresh):
             time.sleep(0.1)
         self.firstIter = False
