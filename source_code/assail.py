@@ -10,7 +10,7 @@ battleMap = al.generate_battle(oldBattleMap=battleMap, buildNewBattleMap=False, 
 
 
 window = arcade.Window(1200, 672, "Battle")
-player1 = al.player(name='plyer1')
+player1 = al.player(name='player1')
 player2 = al.player(name='player2', archetype='mage')
 
 players = [player1, player2]
@@ -18,9 +18,21 @@ for player in players:
     player.assign_texture()
     player.assign_attack()
 
+#Important!!!! can't append to the player.teamMembers array. Need to re-assign (seen in the player.teamMembers = members line)
+members = []
+for i in range(4):
+    name = 'creature_' + str(i)
+    creature = al.creature(name=name, archetype='knight')
+    creature.assign_texture()
+    creature.assign_attack()
+    members.append(creature)
+player1.teamMembers = members
+
+
 occupancy = al.assign_locations(battleMap, players)
 participants = al.randomize_participants(players)
-print(participants)
+for i in participants:
+    print(i.name)
 for creature in participants:
     creature.assign_texture()
 battleStart = al.battle(arcade.get_window(), battleMap, occupancy, participants=participants, overlays=[], activeIndex=0, firstIter = True )

@@ -28,7 +28,7 @@ HORIZONTAL_SHOT = arcade.load_texture(resources + 'shot_horizontal.png')
 FIRE_COLUMN_1 = arcade.load_texture(resources + 'fire_column_1.png')
 FIRE_COLUMN_2 = arcade.load_texture(resources + 'fire_column_2.png')
 SELECT_BOX_WHITE = arcade.load_texture(resources + 'select_box_white.png')
-
+BONES = arcade.load_texture(resources + 'bones.png')
 #Constants
 XGRID = 25
 YGRID = 14
@@ -108,6 +108,7 @@ def check_walkable(battleMap, location):
 
 
 def check_vacancy(occupancy, location):
+    print('location is: [%d, %d]' % (location[0], location[1]))
     if occupancy[location[0]][location[1]] == 0:
         vacant = True
     elif occupancy[location[0]][location[1]] == 1:
@@ -189,6 +190,7 @@ def assign_locations(battleMap, players):
 
     for player in players:
         teams.append( [player] + player.teamMembers )
+    print('Team 1 is: '); print(teams[0]); print('\n\nTeam 2 is: '); print(teams[1])
 
     #Choose a valid starting location for the player, then deposit teammates around him- only on valid squares
     for team in teams:
@@ -201,6 +203,7 @@ def assign_locations(battleMap, players):
                 player = team[0]
                 player.battleMapLocation = location    #assign player location
                 occupancy[i][j] = 1
+                print('Assigned Player')
             else:
                 validStart = False
         
@@ -211,13 +214,13 @@ def assign_locations(battleMap, players):
                 while (validDeposit == False):
                     move = drunk_walk()
                     newLocation = [location[0] + move[0], location[1] + move[1]  ]
-                    walkable = check_walkable(battleMap, newLocation)
-                    if (occupancy[newLocation[0]][newLocation[1]] == 0 and walkable):
+                    if (check_vacancy(occupancy, newLocation) and check_walkable(battleMap, newLocation) and check_bounds(newLocation)):
                         validDeposit = True
                         location = newLocation
                         member = team[i]
                         member.battleMapLocation = location
                         occupancy[location[0]][location[1]] = 1
+                        print('Assigned team member')
 
                     else:
                         validDeposit = False
@@ -267,9 +270,6 @@ class creature:
             self.attack_pattern = attackPatternDict[self.attackName]
 
 
-    
-       
-
 class player(creature):
     def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20, teamMembers=[], money=1000 ):
         super().__init__(self)
@@ -292,9 +292,10 @@ class player(creature):
 class overlay:
     #Class representing images to be rendered on top of the map and participating creatures. 
     #Intended for animation
-    def __init__(self, texture, battleMapLocation):
+    def __init__(self, texture, battleMapLocation, rotation=0):
         self.texture = texture
         self.battleMapLocation = battleMapLocation
+        self.rotation = rotation
 
    
 class battle(arcade.View):
@@ -318,8 +319,7 @@ class battle(arcade.View):
 
         
     def move_creature(self, creature):
-        print('\n%s\'s turn to move. You have %d action points (AP). Moving costs 1 AP, attacking costs 2 AP. ' % (creature.name, creature.apCurrent))
-        print('Each move is represented by one lettter: l:left, r:right: u:up: d:down, a:attack, e:end turn')
+        print('\n%s\'s turn. %d AP. 1AP moves:{l(left) r(right) u(up) d(down)} 2AP:{a(attack)} e(end turn) ' % (creature.name, creature.apCurrent))
         validMoves = ['l', 'r', 'u', 'd', 'a', 'e']
         validAttack = ['l', 'r', 'u', 'd']
         move = []
@@ -382,9 +382,8 @@ class battle(arcade.View):
                 
     def on_draw(self):
         arcade.start_render()
-        #print('On draw')
-        #Draw the battleMap tile background:
         for i in range(len(self.battleMap)):
+        #Draw the battleMap tile background:
             for j in range(len(self.battleMap[0])):
                 x = 24 + 48 * j
                 y = 24 + 48 * i 
@@ -409,13 +408,20 @@ class battle(arcade.View):
                 y = 24 + 48 * participant.battleMapLocation[0]
 
                 arcade.draw_scaled_texture_rectangle(x, y, participant.texture, 1, 0)
-
+        
+        
+        #Draw selection box to show current player
+        selectBoxLocation = self.participants[self.activeIndex].battleMapLocation
+        x = 24 + 48 * selectBoxLocation[1]
+        y = 24 + 48 * selectBoxLocation[0]
+        arcade.draw_scaled_texture_rectangle(x, y, SELECT_BOX_WHITE, 1, 0)
+        
         #Draw all overlay images
         if self.overlays:
             image = self.overlays[0]
             x = 24 + 48 * image.battleMapLocation[1]
             y = 24 + 48 * image.battleMapLocation[0]
-            arcade.draw_scaled_texture_rectangle(x, y, image.texture, 1, 0)
+            arcade.draw_scaled_texture_rectangle(x, y, image.texture, 1, image.rotation)
             print('drew Overlay')
             del self.overlays[0]
             self.skipToRefresh = True
@@ -423,7 +429,6 @@ class battle(arcade.View):
 
     def on_update(self, delta_time=0.1):
         #Main loop of the battle program. This is where all creature turns take place
-        #print('on update')
         activeParticipant = self.participants[self.activeIndex]
         
         #closeWindow = input('Close Window?: ').strip().lower()
@@ -432,25 +437,42 @@ class battle(arcade.View):
 
         #if the active player is out of action points and they are the last player in the full turn,
         #Reset their current action points and go to the next player
-        #print('overlays length is %d' % len(self.overlays))
+
+         
         if (self.firstIter == False):
+        #First loop doesn't render the screen. Redo the first render so that first player can see the map before the first move
+
             if (len(self.overlays) == 0 and self.skipToRefresh == False):
+            #Skip any turns while there is still something to render
                 
+                for creature in self.participants:
+                #Check for dead players; set their texture to bones and put their AP to 0 so they can't move
+                    if (creature.living == False):
+                        creature.apCurrent = 0
+                        creature.apMax = 0
+                        creature.texture = BONES
+                        self.occupancy[creature.battleMapLocation[0]][creature.battleMapLocation[1]] = 0
+
+
                 if activeParticipant.apCurrent <= 0:
+                #If the current player is out of AP, reset their AP to the max, and move to the next player
                         if self.activeIndex == (len(self.participants) - 1):
-                            
                             activeParticipant.apCurrent = activeParticipant.apMax
                             self.activeIndex = 0
                         else:
                             activeParticipant.apCurrent = activeParticipant.apMax
                             self.activeIndex += 1
-                            self.overlays.append(overlay(texture=SELECT_BOX_WHITE, battleMapLocation=self.participants[self.activeIndex].battleMapLocation))
                 
+                #If the current player HAS AP, allow them to move
                 elif activeParticipant.apCurrent > 0:
                     self.move_creature(activeParticipant)
-                    #print(self.activeIndex)
+        
         if (self.skipToRefresh):
+        #Inserting a time delay for the animation to render 
             time.sleep(0.1)
         self.firstIter = False
         updatedBattle = battle(self.windowObject, self.battleMap, self.occupancy, self.participants, self.overlays, self.activeIndex, self.firstIter )
+        #Create a new battle scene with the updated settings
+
         self.window.show_view(updatedBattle)
+        #show the new battle map
