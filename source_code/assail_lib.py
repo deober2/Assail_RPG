@@ -29,6 +29,7 @@ FIRE_COLUMN_1 = arcade.load_texture(resources + 'fire_column_1.png')
 FIRE_COLUMN_2 = arcade.load_texture(resources + 'fire_column_2.png')
 SELECT_BOX_WHITE = arcade.load_texture(resources + 'select_box_white.png')
 BONES = arcade.load_texture(resources + 'bones.png')
+
 #Constants
 XGRID = 25
 YGRID = 14
@@ -69,8 +70,8 @@ def random_name():
     for i in range(nameLength):
         if firstLetter == True:
             
-            if random.random() > .4:
-                if random.random() > .5:
+            if random.random() > .3:
+                if random.random() > .4:
                     name += random.choice(commonConsonants)
                 else:
                     name += random.choice(consonants)
@@ -78,16 +79,27 @@ def random_name():
                 name += random.choice(vowels)
             firstLetter = False
         
+
         else:
             if name[-1] in consonants:
                 if random.random() > 0.9:
-                    if random.random() > .3:
+                    if random.random() > .35:
+                        name += '\''
+                    elif random.random() > .3:
                         name += random.choice(commonConsonants)
                     else:    
                         name += random.choice(consonants)
                 else:
                     name += random.choice(vowels)
             
+            elif name[-1] == '\'':
+                if random.random() > 0.2:
+                    if random.random() > 0.5:
+                        name += random.choice(commonConsonants)
+                    else:
+                        name += random.choice(consonants)
+                else:
+                    name += random.choice(vowels) 
             else:
                 if random.random() > 0.4:
                     if random.random() > .50:
@@ -149,7 +161,6 @@ def check_walkable(battleMap, location):
 
 
 def check_vacancy(occupancy, location):
-    print('location is: [%d, %d]' % (location[0], location[1]))
     if occupancy[location[0]][location[1]] == 0:
         vacant = True
     elif occupancy[location[0]][location[1]] == 1:
@@ -231,7 +242,6 @@ def assign_locations(battleMap, players):
 
     for player in players:
         teams.append( [player] + player.teamMembers )
-    print('Team 1 is: '); print(teams[0]); print('\n\nTeam 2 is: '); print(teams[1])
 
     #Choose a valid starting location for the player, then deposit teammates around him- only on valid squares
     for team in teams:
@@ -244,7 +254,6 @@ def assign_locations(battleMap, players):
                 player = team[0]
                 player.battleMapLocation = location    #assign player location
                 occupancy[i][j] = 1
-                print('Assigned Player')
             else:
                 validStart = False
         
@@ -262,7 +271,6 @@ def assign_locations(battleMap, players):
                             member = team[i]
                             member.battleMapLocation = location
                             occupancy[location[0]][location[1]] = 1
-                            print('Assigned team member')
 
                         else:
                             validDeposit = False
@@ -282,7 +290,7 @@ def randomize_participants(players):
 #Game Object definitions
 class creature:
     #Class representing moveable characters
-    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20, armorClass=10, attackName='melee'):
+    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='blue', apMax=4, orientation='down', health=20, armorClass=10, attackName='melee'):
         self.name = name
         self.archetype = archetype
         self.battleMapLocation = battleMapLocation
@@ -313,7 +321,7 @@ class creature:
 
 
 class player(creature):
-    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='red', apMax=4, orientation='down', health=20, teamMembers=[], money=1000 ):
+    def __init__(self, name='noName', archetype='knight', battleMapLocation=[5, 10], team='blue', apMax=4, orientation='down', health=20, teamMembers=[], money=1000 ):
         super().__init__(self)
         self.name = name
         self.archetype = archetype
@@ -372,7 +380,6 @@ class battle(arcade.View):
             if (move == 'a' and creature.apCurrent < 2):
                 move = 'attack_not_valid'
         
-        print('Your move is %s' % move)
         if (len(move) == 1 and move in validMoves and creature.apCurrent >0):
             if move == 'e':
                 creature.apCurrent = 0
@@ -391,8 +398,6 @@ class battle(arcade.View):
                     creature.battleMapLocation = newLocation
                     self.occupancy[creature.battleMapLocation[0]][creature.battleMapLocation[1]] = 1
                     creature.apCurrent -= 1
-                    print(creature.battleMapLocation)
-                    print('New AP: %d' % creature.apCurrent)
                 else:
                     print(creature.battleMapLocation)
                     print('move invalid. Space is off-grid, occuppied or not walkable.')
