@@ -59,6 +59,47 @@ del attackNames; del patterns; del animations; del animationNames; del damages
 
 
 #Game function definitions
+def random_name():
+    name = ''
+    firstLetter = True
+    consonants = 'bcdfghjklmnpqrstvwxz'
+    commonConsonants = 'tnsrhldcfp'
+    vowels = 'aeiouy'
+    nameLength = random.randint(2,7)
+    for i in range(nameLength):
+        if firstLetter == True:
+            
+            if random.random() > .4:
+                if random.random() > .5:
+                    name += random.choice(commonConsonants)
+                else:
+                    name += random.choice(consonants)
+            else:
+                name += random.choice(vowels)
+            firstLetter = False
+        
+        else:
+            if name[-1] in consonants:
+                if random.random() > 0.9:
+                    if random.random() > .3:
+                        name += random.choice(commonConsonants)
+                    else:    
+                        name += random.choice(consonants)
+                else:
+                    name += random.choice(vowels)
+            
+            else:
+                if random.random() > 0.4:
+                    if random.random() > .50:
+                        name += random.choice(commonConsonants)
+                    else:
+                        name += random.choice(consonants)
+                else:
+                    name += random.choice(vowels)
+    name = name[0].upper() + name[1:]
+    return name
+
+        
 def mat_mult(A, direction):
 
     if direction == 'l':
@@ -214,16 +255,17 @@ def assign_locations(battleMap, players):
                 while (validDeposit == False):
                     move = drunk_walk()
                     newLocation = [location[0] + move[0], location[1] + move[1]  ]
-                    if (check_vacancy(occupancy, newLocation) and check_walkable(battleMap, newLocation) and check_bounds(newLocation)):
-                        validDeposit = True
-                        location = newLocation
-                        member = team[i]
-                        member.battleMapLocation = location
-                        occupancy[location[0]][location[1]] = 1
-                        print('Assigned team member')
+                    if check_bounds(newLocation):
+                        if (check_vacancy(occupancy, newLocation) and check_walkable(battleMap, newLocation) ):
+                            validDeposit = True
+                            location = newLocation
+                            member = team[i]
+                            member.battleMapLocation = location
+                            occupancy[location[0]][location[1]] = 1
+                            print('Assigned team member')
 
-                    else:
-                        validDeposit = False
+                        else:
+                            validDeposit = False
     return occupancy
                 
 
